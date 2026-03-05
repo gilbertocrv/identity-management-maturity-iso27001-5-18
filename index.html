@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Deep Dive 5.18 – Access Rights | ISO 27001:2022</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy: #003366;
+    --navy-mid: #004080;
+    --navy-light: #0056b3;
+    --accent: #c8922a;
+    --accent-light: #e8a83a;
+    --bg: #f4f6f8;
+    --white: #ffffff;
+    --gray: #666;
+    --border: #d1d9e4;
+    --text: #1a2340;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'IBM Plex Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+  }
+
+  /* HEADER */
+  header {
+    background: var(--navy);
+    padding: 0;
+    position: relative;
+    overflow: hidden;
+  }
+
+  header::before {
+    content: '';
+    position: absolute;
+    top: -60px; right: -60px;
+    width: 320px; height: 320px;
+    border: 40px solid rgba(200,146,42,0.12);
+    border-radius: 50%;
+  }
+
+  header::after {
+    content: '';
+    position: absolute;
+    bottom: -40px; left: 40%;
+    width: 180px; height: 180px;
+    border: 25px solid rgba(255,255,255,0.04);
+    border-radius: 50%;
+  }
+
+  .header-inner {
+    max-width: 900px;
+    margin: auto;
+    padding: 50px 30px 40px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .breadcrumb {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 2px;
+    color: rgba(255,255,255,0.4);
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .breadcrumb a {
+    color: var(--accent-light);
+    text-decoration: none;
+  }
+
+  .breadcrumb a:hover { text-decoration: underline; }
+
+  .header-tag {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--accent-light);
+    margin-bottom: 12px;
+    display: block;
+  }
+
+  header h1 {
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--white);
+    line-height: 1.2;
+    margin-bottom: 14px;
+  }
+
+  header h1 span { color: var(--accent-light); }
+
+  header p {
+    font-size: 14px;
+    color: rgba(255,255,255,0.6);
+    max-width: 580px;
+    line-height: 1.7;
+    margin-bottom: 24px;
+  }
+
+  .header-meta {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  .meta-pill {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    padding: 4px 12px;
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 3px;
+    color: rgba(255,255,255,0.5);
+    letter-spacing: 1px;
+  }
+
+  /* MAIN */
+  main {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 50px 30px;
+  }
+
+  /* GRUPOS */
+  .group {
+    margin-bottom: 40px;
+  }
+
+  .group-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+
+  .group-num {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: var(--accent);
+    text-transform: uppercase;
+  }
+
+  .group-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--navy);
+  }
+
+  .group-divider {
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  /* TABELA */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    overflow: hidden;
+  }
+
+  thead th {
+    background: #f0f4f8;
+    color: var(--navy);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 12px 16px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+
+  tbody td {
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border);
+    font-size: 13px;
+    color: var(--text);
+    line-height: 1.5;
+    vertical-align: middle;
+  }
+
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:hover td { background: #f8fafc; }
+
+  td.select-cell {
+    width: 200px;
+    min-width: 160px;
+  }
+
+  select {
+    width: 100%;
+    padding: 7px 10px;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 12px;
+    color: var(--text);
+    background: var(--white);
+    cursor: pointer;
+    appearance: auto;
+  }
+
+  select:focus {
+    outline: none;
+    border-color: var(--navy-light);
+  }
+
+  /* RESULTADO */
+  .result-section {
+    margin-top: 40px;
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 28px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 20px;
+    flex-wrap: wrap;
+  }
+
+  .result-block {
+    text-align: center;
+    flex: 1;
+    min-width: 120px;
+  }
+
+  .result-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--gray);
+    display: block;
+    margin-bottom: 8px;
+  }
+
+  .result-value {
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--navy);
+    font-family: 'IBM Plex Mono', monospace;
+  }
+
+  .result-divider {
+    width: 1px;
+    height: 60px;
+    background: var(--border);
+  }
+
+  .btn-calculate {
+    padding: 12px 28px;
+    background: var(--navy);
+    color: var(--white);
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-weight: 700;
+    font-size: 13px;
+    letter-spacing: 0.5px;
+    transition: background 0.2s;
+    white-space: nowrap;
+  }
+
+  .btn-calculate:hover { background: var(--navy-light); }
+
+  /* LEGENDA */
+  .legend {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 24px;
+    margin-top: 30px;
+  }
+
+  .legend h3 {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 16px;
+  }
+
+  .legend-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 10px;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    font-size: 12px;
+  }
+
+  .legend-num {
+    font-family: 'IBM Plex Mono', monospace;
+    font-weight: 600;
+    color: var(--navy);
+    min-width: 16px;
+  }
+
+  .legend-label { color: var(--gray); line-height: 1.4; }
+
+  /* FOOTER */
+  footer {
+    background: var(--navy);
+    padding: 24px 30px;
+    text-align: center;
+    margin-top: 60px;
+  }
+
+  footer p {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: rgba(255,255,255,0.35);
+    letter-spacing: 1px;
+  }
+
+  footer a { color: var(--accent-light); text-decoration: none; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <div class="breadcrumb">
+      <a href="../index.html">← Voltar ao índice</a>
+      <span>/</span>
+      <span>5.18</span>
+    </div>
+    <span class="header-tag">Camada 3 · Autorização · Governança de Acesso</span>
+    <h1>Controle 5.18<br><span>Access Rights</span></h1>
+    <p>Avaliação de maturidade na concessão, revisão e revogação de permissões. Foco no Princípio do Menor Privilégio e na Segregação de Funções (SoD).</p>
+    <div class="header-meta">
+      <span class="meta-pill">ISO/IEC 27001:2022</span>
+      <span class="meta-pill">Menor Privilégio</span>
+      <span class="meta-pill">SoD</span>
+      <span class="meta-pill">Access Certification</span>
+    </div>
+  </div>
+</header>
+
+<main>
+
+  <div id="assessment"></div>
+
+  <div class="result-section">
+    <div class="result-block">
+      <span class="result-label">Maturidade do Controle</span>
+      <span id="overallScore" class="result-value">—</span>
+    </div>
+    <div class="result-divider"></div>
+    <div class="result-block">
+      <span class="result-label">Classificação Estratégica</span>
+      <span id="classification" class="result-value" style="font-size:18px; padding-top:6px; display:block;">—</span>
+    </div>
+    <button class="btn-calculate" onclick="calculate()">Calcular Maturidade</button>
+  </div>
+
+  <div class="legend">
+    <h3>Escala de Maturidade (0–5)</h3>
+    <div class="legend-grid">
+      <div class="legend-item"><span class="legend-num">0</span><span class="legend-label">Inexistente — controle não existe ou não é aplicado</span></div>
+      <div class="legend-item"><span class="legend-num">1</span><span class="legend-label">Ad-hoc — implementação informal ou isolada</span></div>
+      <div class="legend-item"><span class="legend-num">2</span><span class="legend-label">Documentado — procedimentos registrados, não padronizados</span></div>
+      <div class="legend-item"><span class="legend-num">3</span><span class="legend-label">Padronizado — processos aplicados de forma consistente</span></div>
+      <div class="legend-item"><span class="legend-num">4</span><span class="legend-label">Gerenciado — controles com evidências e auditabilidade</span></div>
+      <div class="legend-item"><span class="legend-num">5</span><span class="legend-label">Baseado em Risco — alinhado à análise de risco e negócio</span></div>
+    </div>
+  </div>
+
+</main>
+
+<footer>
+  <p>Projeto de estudo independente · Baseado em normas públicas ·
+    <a href="https://github.com/gilbertocrv" target="_blank">github.com/gilbertocrv</a>
+  </p>
+</footer>
+
+<script>
+const criteria = {
+  "Processo de Concessão e Provisionamento": [
+    "Existe um fluxo formal de aprovação (workflow) para cada solicitação de novo acesso ou alteração?",
+    "As concessões de acesso seguem perfis de função (Role-Based Access Control) pré-definidos pelo negócio?",
+    "Há evidências de que os proprietários de ativos/dados aprovam formalmente as permissões antes da execução técnica?"
+  ],
+  "Segregação e Menor Privilégio": [
+    "A organização aplica regras de Segregação de Funções (SoD) para evitar conflitos de interesse em processos críticos?",
+    "O acesso é concedido com base no 'Need-to-know' (necessidade de saber), evitando permissões genéricas ou excessivas?",
+    "Existem controles para identificar e remover 'acessos herdados' quando um colaborador muda de cargo ou área?"
+  ],
+  "Revisão e Ciclo de Vida": [
+    "A organização realiza revisões periódicas de acesso (Access Certification) com participação ativa dos gestores?",
+    "Existe um processo de revogação imediata de acessos para desligamentos ou mudanças de função?",
+    "A eficácia da gestão de direitos de acesso é auditada através de logs de concessão vs. solicitações aprovadas?"
+  ]
+};
+
+const assessmentDiv = document.getElementById("assessment");
+let groupIndex = 1;
+
+for (const group in criteria) {
+  let html = `
+    <div class="group">
+      <div class="group-header">
+        <span class="group-num">Grupo ${groupIndex}</span>
+        <span class="group-title">${group}</span>
+        <div class="group-divider"></div>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Critério de Avaliação de Maturidade (ISO 5.18)</th>
+            <th style="width:180px">Nível (0–5)</th>
+          </tr>
+        </thead>
+        <tbody>`;
+
+  criteria[group].forEach(q => {
+    html += `
+          <tr>
+            <td>${q}</td>
+            <td class="select-cell">
+              <select class="score">
+                <option value="0">0 — Inexistente</option>
+                <option value="1">1 — Ad-hoc</option>
+                <option value="2">2 — Documentado</option>
+                <option value="3">3 — Padronizado</option>
+                <option value="4">4 — Gerenciado</option>
+                <option value="5">5 — Baseado em Risco</option>
+              </select>
+            </td>
+          </tr>`;
+  });
+
+  html += `</tbody></table></div>`;
+  assessmentDiv.innerHTML += html;
+  groupIndex++;
+}
+
+function calculate() {
+  const scores = document.querySelectorAll(".score");
+  let sum = 0;
+  scores.forEach(s => sum += parseInt(s.value));
+  const avg = (sum / scores.length).toFixed(2);
+  document.getElementById("overallScore").innerText = avg;
+
+  let cls = "";
+  if (avg <= 1.5) cls = "Inicial";
+  else if (avg <= 2.5) cls = "Básico";
+  else if (avg <= 3.5) cls = "Estruturado";
+  else if (avg <= 4.5) cls = "Gerenciado";
+  else cls = "Otimizado";
+  document.getElementById("classification").innerText = cls;
+}
+</script>
+</body>
+</html>
